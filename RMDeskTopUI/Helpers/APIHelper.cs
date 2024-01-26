@@ -1,15 +1,18 @@
-﻿using System;
+﻿using RMDeskTopUI.Models;
+using System;
 using System.Collections.Generic;
+using System.Configuration;
 using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Threading.Tasks;
+using System.Windows.Documents;
 
 namespace RMDeskTopUI.Helpers
 {
-    public class APIHelper
+    public class APIHelper : IAPIHelper
     {
-        public HttpClient ApiClient { get; set; }
+        private HttpClient apiClient;
 
         public APIHelper()
         {
@@ -18,13 +21,15 @@ namespace RMDeskTopUI.Helpers
 
         private void InitializeClient()
         {
-            ApiClient = new HttpClient();
-            ApiClient.BaseAddress = new Uri("");
-            ApiClient.DefaultRequestHeaders.Accept.Clear();
-            ApiClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+            string api = ConfigurationManager.AppSettings["api"];
+
+            apiClient = new HttpClient();
+            apiClient.BaseAddress = new Uri(api);
+            apiClient.DefaultRequestHeaders.Accept.Clear();
+            apiClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
         }
 
-        public async Task Authenticate(string username, string password)
+        public async Task<AuthenticatedUser> Authenticate(string username, string password)
         {
             var data = new FormUrlEncodedContent(new[]
             {
@@ -33,9 +38,17 @@ namespace RMDeskTopUI.Helpers
                 new KeyValuePair<string, string>("password", password)
             });
 
-            using (HttpResponseMessage response = await ApiClient.PostAsync("/Token", data))
+            using (HttpResponseMessage response = await apiClient.PostAsync("/Token", data))
             {
-
+                if (response.IsSuccessStatusCode)
+                {
+                    var result = await response.Content.ReadAsAsync<AuthenticatedUser>();
+                    return result;
+                }
+                else
+                {
+                    throw new Exception(response.ReasonPhrase);
+                }
             }
         }
     }
