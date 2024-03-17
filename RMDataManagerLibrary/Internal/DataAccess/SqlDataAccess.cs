@@ -8,9 +8,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace RMDataManagerLibrary
+namespace RMDataManagerLibrary.Internal.DataAccess
 {
-    public class SqlDataAccess
+    internal class SqlDataAccess
     {
         public string GetConnectionString(string name)
         {
@@ -25,6 +25,15 @@ namespace RMDataManagerLibrary
                 List<T> rows = con.Query<T>(storedProcedure, parameters, commandType: CommandType.StoredProcedure).ToList();
 
                 return rows;
+            }
+        }
+        public void SaveData<T>(string storedProcedure, T parameters, string connectionStringName)
+        {
+            string connectionString = GetConnectionString(connectionStringName);
+
+            using (IDbConnection con = new SqlConnection(connectionString))
+            {
+                con.Execute(storedProcedure, parameters, commandType: CommandType.StoredProcedure);
             }
         }
     }
